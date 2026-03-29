@@ -1,0 +1,5 @@
+gymnasium
+yfinance
+numpy
+pandas
+openenv
