@@ -1,0 +1,1 @@
+pip install gymnasium==0.29.1 yfinance numpy pandas gradio==5.23.0

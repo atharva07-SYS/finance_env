@@ -1,5 +1,5 @@
-gymnasium
+gymnasium==0.29.1
 yfinance
 numpy
 pandas
-openenv
+gradio==5.23.0
