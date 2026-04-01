@@ -6,27 +6,26 @@ from env.reward import RewardEngine
 class FinanceEnv(gym.Env):
     metadata = {"render_modes": []}
 
-    def __init__(self):
+    def __init__(self, live=False):
         super().__init__()
-        self.data = load_data()
+        self.live = live
+        self.data = load_data(live=live)
         self.reward_engine = RewardEngine(initial_value=10000)
         self.current_step = 0
         self.portfolio_value = 10000
         self.prev_value = 10000
         self.max_steps = 200
 
-        # 5 stocks x 4 features
         self.observation_space = gym.spaces.Box(
             low=0, high=np.inf, shape=(5, 4), dtype=np.float32
         )
-        # Portfolio weights per stock
         self.action_space = gym.spaces.Box(
             low=0, high=1, shape=(5,), dtype=np.float32
         )
 
     def reset(self, seed=None):
         super().reset(seed=seed)
-        self.current_step = 20  # Start after MA warmup
+        self.current_step = 20
         self.portfolio_value = 10000
         self.prev_value = 10000
         self.reward_engine.reset()
@@ -34,25 +33,16 @@ class FinanceEnv(gym.Env):
         return obs, {}
 
     def step(self, action):
-        # Normalize weights
         weights = action / (action.sum() + 1e-9)
-
-        # Get returns for each stock today
         returns = get_daily_returns(self.data, self.current_step)
-
-        # Portfolio return = weighted sum of stock returns
         portfolio_return = float(np.dot(weights, returns))
         self.portfolio_value = self.prev_value * (1 + portfolio_return)
-
-        # Count trades (non-zero allocations)
         num_trades = int(np.sum(weights > 0.05))
 
-        # Compute reward
         reward, info = self.reward_engine.compute(
             self.prev_value, self.portfolio_value, num_trades
         )
 
-        # Stop-loss check
         stop_loss_hit = self.reward_engine.is_stopped(self.portfolio_value)
         if stop_loss_hit:
             reward -= 50
@@ -75,5 +65,6 @@ class FinanceEnv(gym.Env):
             "drawdown_pct": round(
                 (self.reward_engine.peak_value - self.portfolio_value)
                 / (self.reward_engine.peak_value + 1e-9) * 100, 2
-            )
+            ),
+            "mode": "LIVE 🔴" if self.live else "HISTORICAL 📊"
         }
