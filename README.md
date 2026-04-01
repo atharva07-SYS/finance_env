@@ -6,7 +6,7 @@ colorFrom: green
 colorTo: blue
 sdk: gradio
 sdk_version: "5.23.0"
-app_file: app.py
+app_file: inference.py
 python_version: "3.11"
 pinned: false
 startup_duration_timeout: 1h
