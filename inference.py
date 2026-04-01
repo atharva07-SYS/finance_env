@@ -1,4 +1,11 @@
+import subprocess
 import sys
+
+# Force install OpenEnv
+subprocess.check_call([sys.executable, "-m", "pip", "install",
+    "gymnasium==0.29.1", "yfinance", "numpy", "pandas",
+    "git+https://github.com/meta-pytorch/OpenEnv.git"])
+
 import os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
@@ -10,4 +17,4 @@ import uvicorn
 app = create_fastapi_app(FinanceOpenEnv, FinanceAction, FinanceObservation)
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=7860)
