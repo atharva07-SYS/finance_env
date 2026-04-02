@@ -1,0 +1,42 @@
+name: finance-env
+version: "1.0.0"
+description: "Multi-Asset Portfolio Trading RL Environment using real NSE data"
+author: "Atharva"
+
+environment:
+  class: FinanceOpenEnv
+  module: openenv_wrapper
+
+action:
+  class: FinanceAction
+  module: openenv_wrapper
+
+observation:
+  class: FinanceObservation
+  module: openenv_wrapper
+
+state:
+  class: FinanceState
+  module: openenv_wrapper
+
+server:
+  host: "0.0.0.0"
+  port: 7860
+  entry_point: inference.py
+
+tasks:
+  - name: portfolio_trading
+    description: "Trade 5 NSE stocks to maximize returns while managing risk"
+    difficulty: medium
+
+rewards:
+  - name: daily_return
+    description: "Daily portfolio return"
+  - name: sharpe_ratio
+    description: "Risk-adjusted return metric"
+  - name: drawdown_penalty
+    description: "Penalty for exceeding 5% drawdown"
+  - name: stop_loss
+    description: "Episode ends if portfolio drops 10%"
+  - name: transaction_cost
+    description: "Cost per trade to discourage overtrading"
