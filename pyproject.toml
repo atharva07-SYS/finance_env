@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "finance-env"
+version = "1.0.0"
+description = "Multi-Asset Portfolio Trading RL Environment"
+authors = [
+    {name = "Atharva", email = "atharva@example.com"}
+]
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "gymnasium==0.29.1",
+    "yfinance",
+    "numpy",
+    "pandas",
+    "gradio==5.23.0",
+    "fastapi",
+    "uvicorn",
+    "matplotlib",
+]
+
+[project.urls]
+Homepage = "https://huggingface.co/spaces/20atharva26/finance-env"
+Repository = "https://github.com/atharva07-SYS/finance_env"
+
+[tool.openenv]
+name = "finance-env"
+version = "1.0.0"
+entry_point = "inference.py"
