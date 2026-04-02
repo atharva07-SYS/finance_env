@@ -20,7 +20,11 @@ dependencies = [
     "fastapi",
     "uvicorn",
     "matplotlib",
+    "openenv-core",
 ]
+
+[project.scripts]
+server = "inference:app"
 
 [project.urls]
 Homepage = "https://huggingface.co/spaces/20atharva26/finance-env"
