@@ -24,7 +24,7 @@ dependencies = [
 ]
 
 [project.scripts]
-server = "inference:app"
+server = "inference:main"
 
 [project.urls]
 Homepage = "https://huggingface.co/spaces/20atharva26/finance-env"

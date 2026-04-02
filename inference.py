@@ -6,7 +6,6 @@ subprocess.check_call([sys.executable, "-m", "pip", "install",
     "git+https://github.com/meta-pytorch/OpenEnv.git"])
 
 import os
-import threading
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from openenv_wrapper import FinanceOpenEnv, FinanceAction, FinanceObservation
@@ -19,7 +18,7 @@ import matplotlib.pyplot as plt
 from env.finance_env import FinanceEnv
 from env.data_loader import get_latest_prices
 
-# ── OpenEnv FastAPI app ──────────────────────────────────────
+# OpenEnv FastAPI app
 openenv_app = create_fastapi_app(FinanceOpenEnv, FinanceAction, FinanceObservation)
 
 @openenv_app.get("/")
@@ -39,7 +38,7 @@ async def root():
         "status": "running"
     })
 
-# ── Gradio demo ──────────────────────────────────────────────
+# Gradio demo
 def run_episode(mode):
     live = (mode == "🔴 Live NSE Data")
     env = FinanceEnv(live=live)
@@ -129,11 +128,14 @@ gradio_app = gr.Interface(
     description="Simulate AI portfolio trading on real NSE data!",
 )
 
-# ── Mount Gradio inside FastAPI ──────────────────────────────
-gradio_app = gr.mount_gradio_app(openenv_app, gradio_app, path="/demo")
+# Mount Gradio inside FastAPI
+app = gr.mount_gradio_app(openenv_app, gradio_app, path="/demo")
+
+def main():
+    uvicorn.run(app, host="0.0.0.0", port=7860)
 
 if __name__ == "__main__":
     print("Server running!")
     print("Demo: http://0.0.0.0:7860/demo")
     print("API:  http://0.0.0.0:7860/docs")
-    uvicorn.run(openenv_app, host="0.0.0.0", port=7860)
+    main()
