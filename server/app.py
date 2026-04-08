@@ -1,26 +1,38 @@
+"""
+FastAPI application for the Finance Environment.
+
+This module creates an HTTP server that exposes the FinanceOpenEnv
+over HTTP and WebSocket endpoints.
+
+Usage:
+    uvicorn server.app:app --reload --host 0.0.0.0 --port 8000
+"""
+
 import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from openenv_wrapper import FinanceOpenEnv, FinanceAction, FinanceObservation
-from openenv_core import create_fastapi_app
-from fastapi.responses import JSONResponse
-import uvicorn
+# Support both in-repo and standalone imports
+try:
+    from openenv.core.env_server.http_server import create_app
+    from openenv.core.env_server.mcp_types import CallToolAction, CallToolObservation
+except ImportError:
+    from openenv.core.env_server.http_server import create_app
+    from openenv.core.env_server.mcp_types import CallToolAction, CallToolObservation
 
-app = create_fastapi_app(FinanceOpenEnv, FinanceAction, FinanceObservation)
+from openenv_wrapper import FinanceOpenEnv
 
-@app.get("/")
-async def root():
-    return JSONResponse({
-        "name": "Finance-Env",
-        "description": "Multi-Asset Portfolio Trading RL Environment",
-        "author": "Atharva - Mumbai, India",
-        "stocks": ["RELIANCE.NS", "TCS.NS", "INFY.NS", "HDFCBANK.NS", "WIPRO.NS"],
-        "status": "running"
-    })
+# Create the app with web interface
+app = create_app(
+    FinanceOpenEnv, CallToolAction, CallToolObservation, env_name="finance_env"
+)
+
 
 def main():
-    uvicorn.run(app, host="0.0.0.0", port=7860)
+    """Entry point for direct execution."""
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
+
 
 if __name__ == "__main__":
     main()

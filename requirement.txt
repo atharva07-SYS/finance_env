@@ -1,7 +1,0 @@
-gymnasium==0.29.1
-yfinance==1.2.0
-numpy
-pandas
-fastapi
-uvicorn
-matplotlib

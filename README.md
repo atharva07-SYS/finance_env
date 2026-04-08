@@ -1,16 +1,28 @@
 ---
----
 title: Finance Env
 emoji: 🏦
 colorFrom: green
 colorTo: blue
-sdk: gradio
-sdk_version: "5.23.0"
-app_file: inference.py
-python_version: "3.11"
+sdk: docker
+app_port: 8000
+base_path: /web
 pinned: false
-startup_duration_timeout: 1h
+tags:
+  - openenv-0.2.3
+  - openenv
 ---
+
+This Space is built from OpenEnv environment `finance_env`.
+
+- Space URL: `https://huggingface.co/spaces/20atharva26/finance-env`
+- OpenEnv pinned ref: `0.2.3`
+- Hub tag: `openenv`
+
+```python
+from finance_env import FinanceOpenEnv
+
+env = FinanceOpenEnv()
+```
 
 # 🏦 Finance-Env: Multi-Asset Portfolio Trading Environment
 
@@ -53,7 +65,7 @@ Train an AI agent to manage a portfolio of 5 NSE stocks intelligently — maximi
 
 ### Install
 ```bash
-pip install -r requirements.txt
+pip install -e .
 ```
 
 ### Test Environment
@@ -61,9 +73,9 @@ pip install -r requirements.txt
 python test_env.py
 ```
 
-### Run Grader
+### Run Server
 ```bash
-python grader/grader.py
+uvicorn server.app:app --host 0.0.0.0 --port 8000
 ```
 
 ---
@@ -78,7 +90,7 @@ reward = return_bonus + 0.1 × sharpe - drawdown_penalty - transaction_cost
 | return_bonus | Daily portfolio return × 100 |
 | sharpe | Risk-adjusted return metric |
 | drawdown_penalty | -10 if drawdown > 5% |
-| transaction_cost | -0.001 per trade |
+| transaction_cost | Cost per trade to discourage overtrading |
 
 ---
 
@@ -97,29 +109,17 @@ reward = return_bonus + 0.1 × sharpe - drawdown_penalty - transaction_cost
 ```
 finance-env/
 ├── env/
-│   ├── finance_env.py    # Core environment
+│   ├── finance_env.py    # Core Gymnasium environment
 │   ├── reward.py         # Reward logic
 │   └── data_loader.py    # NSE data pipeline
-├── grader/
-│   └── grader.py         # Auto scoring
-├── app.py                # HuggingFace Spaces demo
-├── test_env.py           # Quick test
-└── requirements.txt
+├── server/
+│   └── app.py            # FastAPI application
+├── openenv_wrapper.py    # OpenEnv MCPEnvironment wrapper
+├── inference.py          # Server entry point
+├── openenv.yaml          # Environment manifest
+├── pyproject.toml        # Dependencies
+└── Dockerfile            # Container image
 ```
-
----
-
-## 🏆 Sample Grader Results
-```
-========= GRADER RESULTS =========
-Episode 1: ₹8995 | Return: -10.04% | Reward: -516
-Episode 2: ₹8888 | Return: -11.12% | Reward: -1184
-Avg Return : -10.37%
-==================================
-```
-
-> Note: Negative returns are expected with a random agent.
-> A trained RL agent will learn to maximize returns over time!
 
 ---
 
