@@ -134,7 +134,7 @@ app = gr.mount_gradio_app(openenv_app, gradio_app, path="/demo")
 def main():
     # 1. Get port from environment variable (Crucial for Cloud/Validators)
     # 2. Default to 7860 if PORT isn't set
-    port = int(os.environ.get("PORT", 7860))
+    port = int(os.environ.get("PORT", 8000))
     
     print(f"Server starting on port {port}...")
     uvicorn.run(app, host="0.0.0.0", port=port)
