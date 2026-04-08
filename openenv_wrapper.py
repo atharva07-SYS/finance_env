@@ -2,20 +2,14 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-# Support both in-repo and standalone imports
-try:
-    from openenv.core.env_server.mcp_environment import MCPEnvironment
-    from openenv.core.env_server.types import Action, Observation, State
-except ImportError:
-    from openenv.core.env_server.mcp_environment import MCPEnvironment
-    from openenv.core.env_server.types import Action, Observation, State
+from openenv.core.env_server.interfaces import Environment
+from openenv.core.env_server.types import Action, Observation, State
 
 from pydantic import Field
 import numpy as np
 from typing import Any, Optional
 from uuid import uuid4
 from env.finance_env import FinanceEnv
-from fastmcp import FastMCP
 
 
 class FinanceAction(Action):
@@ -32,77 +26,22 @@ class FinanceObservation(Observation):
     daily_return: float = Field(default=0.0, description="Daily return percentage")
     sharpe: float = Field(default=0.0, description="Sharpe ratio")
     drawdown: float = Field(default=0.0, description="Current drawdown percentage")
-    reward: float = Field(default=0.0, description="Step reward")
-    step: int = Field(default=0, description="Current step number")
+    step_num: int = Field(default=0, description="Current step number")
 
 
-class FinanceOpenEnv(MCPEnvironment):
+class FinanceOpenEnv(Environment):
     """
     Multi-Asset Portfolio Trading RL Environment using real NSE data.
 
-    This environment exposes trading functionality through MCP tools:
-    - `trade`: Execute a trade with given portfolio weights
-    - `get_portfolio_status`: Get current portfolio status
-
     Stocks: RELIANCE.NS, TCS.NS, INFY.NS, HDFCBANK.NS, WIPRO.NS
+    Starting Capital: ₹10,000
+    Episode Length: 200 trading days
     """
 
     def __init__(self):
-        # Create MCP server and define tools inline
-        mcp = FastMCP("finance_env")
-
+        super().__init__()
         self._env = FinanceEnv(live=False)
-        self._episode_state = State(episode_id=str(uuid4()), step_count=0)
-
-        env_ref = self._env
-
-        @mcp.tool
-        def trade(weights: list[float] = [0.2, 0.2, 0.2, 0.2, 0.2]) -> dict:
-            """
-            Execute a trade with given portfolio weights for 5 NSE stocks.
-            Weights are normalized to sum to 1.
-
-            Args:
-                weights: List of 5 floats representing portfolio allocation
-                         [RELIANCE, TCS, INFY, HDFCBANK, WIPRO]
-
-            Returns:
-                Dictionary with portfolio value, reward, and trade info
-            """
-            w = np.array(weights[:5], dtype=np.float32)
-            obs, reward, terminated, truncated, info = env_ref.step(w)
-            done = terminated or truncated
-            state = env_ref.state()
-            return {
-                "portfolio_value": state["portfolio_value"],
-                "reward": round(float(reward), 4),
-                "daily_return": info.get("daily_return", 0.0),
-                "sharpe": info.get("sharpe", 0.0),
-                "drawdown": info.get("drawdown", 0.0),
-                "step": state["step"],
-                "done": done,
-                "mode": state["mode"],
-            }
-
-        @mcp.tool
-        def get_portfolio_status() -> dict:
-            """
-            Get the current portfolio status including value, drawdown, and mode.
-
-            Returns:
-                Dictionary with portfolio status information
-            """
-            state = env_ref.state()
-            return {
-                "portfolio_value": state["portfolio_value"],
-                "peak_value": state["peak_value"],
-                "drawdown_pct": state["drawdown_pct"],
-                "step": state["step"],
-                "mode": state["mode"],
-            }
-
-        # Pass the MCP server to the base class
-        super().__init__(mcp)
+        self._state = State(episode_id=str(uuid4()), step_count=0)
 
     def reset(
         self,
@@ -113,35 +52,23 @@ class FinanceOpenEnv(MCPEnvironment):
         """Reset the environment for a new episode."""
         self._env = FinanceEnv(live=False)
         obs, _ = self._env.reset()
-        self._episode_state = State(
+        self._state = State(
             episode_id=episode_id or str(uuid4()),
             step_count=0,
         )
 
-        return Observation(
+        return FinanceObservation(
             done=False,
             reward=0.0,
+            portfolio_value=float(self._env.portfolio_value),
+            daily_return=0.0,
+            sharpe=0.0,
+            drawdown=0.0,
+            step_num=0,
             metadata={
                 "status": "ready",
                 "message": "Finance environment ready!",
-                "portfolio_value": float(self._env.portfolio_value),
                 "stocks": ["RELIANCE.NS", "TCS.NS", "INFY.NS", "HDFCBANK.NS", "WIPRO.NS"],
-            },
-        )
-
-    def _step_impl(
-        self,
-        action: Action,
-        timeout_s: Optional[float] = None,
-        **kwargs: Any,
-    ) -> Observation:
-        """Handle non-MCP actions."""
-        return Observation(
-            done=False,
-            reward=0.0,
-            metadata={
-                "error": f"Unknown action type: {type(action).__name__}. "
-                "Use ListToolsAction or CallToolAction for MCP interactions."
             },
         )
 
@@ -151,21 +78,40 @@ class FinanceOpenEnv(MCPEnvironment):
         timeout_s: Optional[float] = None,
         **kwargs: Any,
     ) -> Observation:
-        """Execute a step in the environment."""
-        self._episode_state.step_count += 1
-        return super().step(action, timeout_s=timeout_s, **kwargs)
+        """Execute a step in the environment.
 
-    async def step_async(
-        self,
-        action: Action,
-        timeout_s: Optional[float] = None,
-        **kwargs: Any,
-    ) -> Observation:
-        """Async step used by the WebSocket handler."""
-        self._episode_state.step_count += 1
-        return await super().step_async(action, timeout_s=timeout_s, **kwargs)
+        Accepts a FinanceAction with portfolio weights, or a base Action
+        (in which case default equal weights are used).
+        """
+        self._state.step_count += 1
+
+        # Extract weights from action
+        if isinstance(action, FinanceAction):
+            weights = np.array(action.weights[:5], dtype=np.float32)
+        else:
+            # Default equal weights for base Action (e.g., from validator)
+            weights = np.array([0.2, 0.2, 0.2, 0.2, 0.2], dtype=np.float32)
+
+        obs, reward, terminated, truncated, info = self._env.step(weights)
+        done = terminated or truncated
+        env_state = self._env.state()
+
+        return FinanceObservation(
+            done=done,
+            reward=float(reward),
+            portfolio_value=float(env_state["portfolio_value"]),
+            daily_return=float(info.get("daily_return", 0.0)),
+            sharpe=float(info.get("sharpe", 0.0)),
+            drawdown=float(info.get("drawdown", 0.0)),
+            step_num=int(env_state["step"]),
+            metadata={
+                "mode": env_state["mode"],
+                "peak_value": float(env_state["peak_value"]),
+                "drawdown_pct": float(env_state["drawdown_pct"]),
+            },
+        )
 
     @property
     def state(self) -> State:
         """Get the current environment state."""
-        return self._episode_state
+        return self._state

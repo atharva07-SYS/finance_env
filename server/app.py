@@ -12,20 +12,12 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# Support both in-repo and standalone imports
-try:
-    from openenv.core.env_server.http_server import create_app
-    from openenv.core.env_server.types import Action, Observation
-except ImportError:
-    from openenv.core.env_server.http_server import create_app
-    from openenv.core.env_server.types import Action, Observation
+from openenv.core.env_server.http_server import create_app
+from openenv_wrapper import FinanceOpenEnv, FinanceAction, FinanceObservation
 
-from openenv_wrapper import FinanceOpenEnv
-
-# Create the app using base Action/Observation types
-# This ensures the validator can send empty {} actions without Pydantic errors
+# Create the app with our custom Action/Observation types
 app = create_app(
-    FinanceOpenEnv, Action, Observation, env_name="finance_env"
+    FinanceOpenEnv, FinanceAction, FinanceObservation, env_name="finance_env"
 )
 
 
