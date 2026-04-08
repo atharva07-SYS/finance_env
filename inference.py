@@ -132,10 +132,12 @@ gradio_app = gr.Interface(
 app = gr.mount_gradio_app(openenv_app, gradio_app, path="/demo")
 
 def main():
-    uvicorn.run(app, host="0.0.0.0", port=7860)
+    # 1. Get port from environment variable (Crucial for Cloud/Validators)
+    # 2. Default to 7860 if PORT isn't set
+    port = int(os.environ.get("PORT", 7860))
+    
+    print(f"Server starting on port {port}...")
+    uvicorn.run(app, host="0.0.0.0", port=port)
 
 if __name__ == "__main__":
-    print("Server running!")
-    print("Demo: http://0.0.0.0:7860/demo")
-    print("API:  http://0.0.0.0:7860/docs")
     main()
