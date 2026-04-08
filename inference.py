@@ -2,8 +2,8 @@ import subprocess
 import sys
 
 subprocess.check_call([sys.executable, "-m", "pip", "install",
-    "gymnasium==0.29.1", "yfinance", "numpy", "pandas", "matplotlib",
-    "git+https://github.com/meta-pytorch/OpenEnv.git"])
+    "gymnasium==0.29.1", "yfinance==1.2.0", "numpy", "pandas", 
+    "matplotlib", "openenv-core"])
 
 import os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))

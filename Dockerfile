@@ -5,29 +5,22 @@ WORKDIR /app
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     git \
-    curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements first
-COPY requirements.txt .
+# Copy all files first
+COPY . .
 
-# Install Python dependencies
+# Install all dependencies
 RUN pip install --no-cache-dir \
     gymnasium==0.29.1 \
-    yfinance \
+    yfinance==1.2.0 \
     numpy \
     pandas \
     fastapi \
     uvicorn \
     matplotlib \
+    openenv-core \
     gradio==5.23.0
-
-# Install Meta OpenEnv
-RUN pip install --no-cache-dir \
-    git+https://github.com/meta-pytorch/OpenEnv.git
-
-# Copy all files
-COPY . .
 
 # Expose port
 EXPOSE 7860
