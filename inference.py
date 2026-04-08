@@ -1,11 +1,5 @@
-import subprocess
-import sys
 import os
-
-subprocess.check_call([sys.executable, "-m", "pip", "install",
-    "gymnasium==0.29.1", "yfinance==1.2.0", "numpy", "pandas", 
-    "matplotlib", "openenv-core"])
-
+import sys
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from openenv_wrapper import FinanceOpenEnv, FinanceAction, FinanceObservation
@@ -21,7 +15,6 @@ import base64
 from env.finance_env import FinanceEnv
 from env.data_loader import get_latest_prices
 
-# OpenEnv FastAPI app
 app = create_fastapi_app(FinanceOpenEnv, FinanceAction, FinanceObservation)
 
 @app.get("/")
@@ -31,20 +24,11 @@ async def root():
         "description": "Multi-Asset Portfolio Trading RL Environment",
         "author": "Atharva - Mumbai, India",
         "stocks": ["RELIANCE.NS", "TCS.NS", "INFY.NS", "HDFCBANK.NS", "WIPRO.NS"],
-        "endpoints": {
-            "reset": "POST /reset",
-            "step": "POST /step",
-            "state": "GET /state",
-            "docs": "GET /docs",
-            "health": "GET /health",
-            "demo": "GET /demo"
-        },
         "status": "running"
     })
 
 @app.get("/demo", response_class=HTMLResponse)
 async def demo():
-    # Run episode
     env = FinanceEnv(live=False)
     obs, _ = env.reset()
     done = False
@@ -63,7 +47,6 @@ async def demo():
     total_return = (state['portfolio_value'] - 10000) / 10000 * 100
     prices = get_latest_prices()
 
-    # Generate chart
     fig, ax = plt.subplots(figsize=(10, 4))
     ax.plot(portfolio_values, color='cyan', linewidth=2)
     ax.axhline(y=10000, color='white', linestyle='--', alpha=0.5)
@@ -78,7 +61,6 @@ async def demo():
     ax.set_facecolor('#1a1a2e')
     fig.patch.set_facecolor('#1a1a2e')
     plt.tight_layout()
-
     buf = io.BytesIO()
     plt.savefig(buf, format='png')
     buf.seek(0)
@@ -92,31 +74,25 @@ async def demo():
     <head><title>Finance-Env Demo</title>
     <style>
         body {{ background: #1a1a2e; color: white; font-family: Arial; padding: 20px; }}
-        table {{ border-collapse: collapse; width: 100%; }}
+        table {{ border-collapse: collapse; width: 50%; }}
         td, th {{ border: 1px solid #444; padding: 8px; }}
         th {{ background: #333; }}
     </style>
     </head>
     <body>
         <h1>🏦 Finance-Env: Multi-Asset Portfolio Trading</h1>
-        <h2>Episode Results</h2>
         <p>Final Portfolio: ₹{state['portfolio_value']} | Return: {round(total_return, 2)}% | Steps: {steps}</p>
         <img src="data:image/png;base64,{chart}" width="100%"/>
         <h2>Live NSE Prices</h2>
         <table><tr><th>Stock</th><th>Price</th></tr>{price_rows}</table>
-        <p><a href="/docs" style="color:cyan">📖 API Docs</a> | 
-        <a href="/health" style="color:cyan">❤️ Health</a></p>
+        <br><a href="/docs" style="color:cyan">📖 API Docs</a>
     </body>
     </html>
     """
     return HTMLResponse(content=html)
 
 def main():
-    port = int(os.environ.get("PORT", 8000))
-    print(f"🚀 Finance-Env Server starting on port {port}")
-    print(f"📊 Demo: http://0.0.0.0:{port}/demo")
-    print(f"📖 API Docs: http://0.0.0.0:{port}/docs")
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    uvicorn.run(app, host="0.0.0.0", port=7860)
 
 if __name__ == "__main__":
     main()
