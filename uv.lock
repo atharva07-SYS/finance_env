@@ -921,6 +921,7 @@ version = "1.0.0"
 source = { editable = "." }
 dependencies = [
     { name = "fastapi" },
+    { name = "gradio" },
     { name = "gymnasium" },
     { name = "matplotlib" },
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
@@ -943,6 +944,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "fastapi", specifier = ">=0.115.0" },
+    { name = "gradio", specifier = ">=4.0.0" },
     { name = "gymnasium", specifier = "==0.29.1" },
     { name = "matplotlib" },
     { name = "numpy" },

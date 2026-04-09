@@ -23,6 +23,7 @@ dependencies = [
     "requests>=2.31.0",
     "matplotlib",
     "openai>=2.30.0",
+    "gradio>=4.0.0",
 ]
 
 [project.optional-dependencies]
