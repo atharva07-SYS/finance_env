@@ -1,7 +1,7 @@
 """
 FastAPI application for the Finance Environment.
 
-This module creates the OpenEnv HTTP server, adds a rich '/' metadata
+This module creates the OpenEnv HTTP server, adds a rich '/info' metadata
 endpoint, and mounts the Gradio trading dashboard at '/demo'.
 
 Usage:
@@ -10,7 +10,11 @@ Usage:
 
 import sys
 import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+# Ensure the project root is on the path for imports
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
 
 import gradio as gr
 from fastapi.responses import JSONResponse
@@ -24,10 +28,10 @@ app = create_app(
 )
 
 
-# ─── 2. Rich root metadata endpoint ──────────────────────────────────────────
-@app.get("/")
-async def root():
-    """Return environment metadata for the top-level endpoint."""
+# ─── 2. Rich metadata endpoint at /info (/ is used by OpenEnv web UI) ────────
+@app.get("/info")
+async def info():
+    """Return environment metadata."""
     return JSONResponse({
         "name": "Finance-Env",
         "version": "1.0.0",
@@ -66,6 +70,7 @@ async def root():
         "starting_capital": 10000,
         "endpoints": {
             "health": "/health",
+            "info": "/info",
             "reset": "/reset",
             "step": "/step",
             "state": "/state",
@@ -76,12 +81,21 @@ async def root():
 
 
 # ─── 3. Mount Gradio dashboard at /demo ──────────────────────────────────────
-try:
-    from app import gradio_app
-    app = gr.mount_gradio_app(app, gradio_app, path="/demo")
-except Exception:
-    # If Gradio import fails (e.g. during validation), the core server still works
-    pass
+# Import using the absolute path to avoid module resolution issues inside Docker
+import importlib.util
+
+_app_py = os.path.join(project_root, "app.py")
+if os.path.exists(_app_py):
+    try:
+        spec = importlib.util.spec_from_file_location("gradio_demo", _app_py)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        gradio_app = getattr(mod, "gradio_app", None)
+        if gradio_app is not None:
+            app = gr.mount_gradio_app(app, gradio_app, path="/demo")
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning(f"Could not mount Gradio demo: {e}")
 
 
 # ─── 4. Entry point ──────────────────────────────────────────────────────────
